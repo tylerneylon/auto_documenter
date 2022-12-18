@@ -184,7 +184,7 @@ def print_fn_w_docstring(code_str):
 
 if __name__ == '__main__':
 
-    # Verify OpenAI API key is configured
+    # Verify that the OpenAI API key is configured.
     keyfile = Path('config.json')
     if not keyfile.is_file():
         print('Error: Please add your openai api key to the file config.json')
@@ -194,12 +194,12 @@ if __name__ == '__main__':
     with keyfile.open() as f:
         openai.api_key = json.load(f)['api_key']
 
-    # If this script has been improperly executed, print the docs
+    # If this script has been improperly executed, print the docstring & exit.
     if len(sys.argv) < 2:
         print(__doc__)
         sys.exit(0)
 
-    # Open and ingest the python file provided as an input
+    # Open and ingest the Python file provided as an input.
     input_filename_path = sys.argv[1]
     input_filename = input_filename_path.split("/")[-1]
     output_file_path = f'output/{input_filename}'
@@ -210,7 +210,7 @@ if __name__ == '__main__':
 
     # If our output is going to a file, create and open a file in the output
     # directory by the same name, for writing. Otherwise make introductory print
-    # to console
+    # to console.
     if PRINT_TO_FILE:
         # Ensure the output directory exists.
         Path('output').mkdir(exist_ok=True)
