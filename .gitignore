@@ -1,3 +1,5 @@
 config.json
 dbg_out.txt
 test_dont_change.py
+output/*
+.DS_Store

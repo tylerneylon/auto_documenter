@@ -25,7 +25,6 @@
 #
 #  * Work nicely with existing docstrings (use as input and overwrite).
 #  * Add docstrings for class definitions.
-#  * Add top-of-file docstrings.
 #  * Detect indentation type per file.
 #  * Wrap long lines at detected file width (or command-line param).
 #  * We could add per-line or per-code-paragraph comments.
@@ -34,6 +33,8 @@
 # KNOWN BUGS:
 #  * When there are back to back function definitions, this script will throw
 #    out all but the last.
+#  * When the last code block in a file is a function definition, that codeblock will get thrown away.
+#  * If the input script does not have a shebang line, the top of file docstring possibly won't get inserted.
 
 
 # ______________________________________________________________________
@@ -61,8 +62,9 @@ print('done!')
 # Constants and globals
 
 NUM_REPLY_TOKENS = 700
-MOCK_CALLS       = False
-
+MOCK_CALLS       = True
+PRINT_TO_FILE    = True # Setting to False will print to console, instead of output/#{input_filename}
+output_file = None
 
 # Turn this on to have additional debug output written to a file.
 if True:
@@ -130,9 +132,25 @@ def fetch_docstring(code_str):
     # Return it
     return docstring
 
+# ______________________________________________________________________
+# Print Functions
+
+def print_out(line):
+    """
+        This function prints the updated code in one of two ways:
+            - to a file in the output directory
+            - to console
+    """
+    if PRINT_TO_FILE:
+        output_file.write(line)
+        output_file.write('\n')
+    else:
+        print(line)
+
 
 def print_fn_w_docstring(code_str):
-    """ This function requests GPT provide a docstring for the function code
+    """ 
+        This function requests GPT provide a docstring for the function code
         (as a str) provided as an argument.  It then prints the function with
         the docstring added.
     """
@@ -142,7 +160,7 @@ def print_fn_w_docstring(code_str):
 
     # Print the function header/signature
     code_lines = code_str.split('\n')
-    print(code_lines[0])
+    print_out(code_lines[0])
 
     # Print the docstring
     indent = re.search(r'^(\s*)', code_lines[0])
@@ -150,11 +168,11 @@ def print_fn_w_docstring(code_str):
     prefix = ' ' * (indent + 4)
 
     for ans_line in docstring.split('\n'):
-        print(prefix + ans_line)
+        print_out(prefix + ans_line)
 
     # Print the rest of the function
     for line in code_lines[1:]:
-        print(line)
+        print_out(line)
 
 
 # ______________________________________________________________________
@@ -178,18 +196,34 @@ if __name__ == '__main__':
         sys.exit(0)
 
     # Open and ingest the python file provided as an input
-    with open(sys.argv[1]) as f:
+    input_filename_path = sys.argv[1]
+    input_filename = input_filename_path.split("/")[-1]
+    output_file_path = f'output/{input_filename}'
+
+    with open(input_filename_path) as f:
         code = f.read()
     lines = code.split('\n')
 
-    print('Here is your code with docstrings added: \n\n')
+    # If our output is going to a file, create and open a file in the output directory by the same name, for writing
+    # Otherwise make introductory print to console
+    if PRINT_TO_FILE:
+        output_file = open(output_file_path,'w')
+    else:
+        print('Here is your code with docstrings added: \n\n')
+
+
+    #######################################
+    # BEGIN GENERATING CODE WITH DOCSTRINGS
+    #######################################
 
     # Get 'Top of File' docstring
     tof_docstring = fetch_docstring(code)
 
-    # Get Function docstring
+    # Print Out Input Code with Docstrings Inserted
     #       Walk through the input code, line-by-line.
-    #       Print out code, until you find a function. 
+    #       Print each line of code through the shebang line.
+    #       If you've passed the shebang line, add the top of file docstring
+    #       Then print out code, until you find a function. 
     #       When you find a function, capture it and have GPT provide a docstring for it.
     #       Print out the function with docstring.
     #       Continue as before until file end.
@@ -218,7 +252,14 @@ if __name__ == '__main__':
             else:
                 if not passed_the_shebang_line and re.search(r'^#!', line):
                     passed_the_shebang_line = True
-                    print(line)
-                    print(tof_docstring)
+                    print_out(line)
+                    print_out(tof_docstring)
                 else:
-                    print(line)
+                    print_out(line)
+
+
+    if PRINT_TO_FILE:
+        print(f'The file \'{output_file_path}\' now contains your code with docstrings added.')
+        output_file.close()
+
+
