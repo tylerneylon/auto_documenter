@@ -30,7 +30,6 @@
 #  * Wrap long lines at detected file width (or command-line param).
 #  * We could add per-line or per-code-paragraph comments.
 
-
 # ______________________________________________________________________
 # Imports
 
@@ -59,7 +58,7 @@ NUM_REPLY_TOKENS = 700
 
 
 # Turn this on to have additional debug output written to a file.
-if False:
+if True:
     dbg_f = open('dbg_out.txt', 'w')
 else:
     dbg_f = None
@@ -78,12 +77,17 @@ def pr(s=''):
 # GPT functions
 
 def send_prompt(prompt):
+    """
+    This function sends the provided prompt to GPT and returns GPT's response.
+    """
 
+    # Document what's happening to the debugger output file
     pr('\n' + ('_' * 70))
     pr('send_prompt()')
     pr(f'I will send over this prompt:\n\n')
     pr(prompt)
 
+    # Send request to GPT, return response
     return openai.Completion.create(
         model = "text-davinci-003",
         prompt = prompt,
@@ -95,21 +99,31 @@ def send_prompt(prompt):
     )
 
 def print_fn_w_docstring(code_str):
-    
+    """
+    This function requests GPT provide a docstring for the stringified function provided as an argument.
+    It then prints the stringified function with the docstring added.
+    """
+
+    # Construct the GPT prompt
     prompt  = 'Write a docstring for the following code:\n\n'
     prompt += code_str
     prompt += '\n\nDocstring:\n"""'
 
+    # Make the request for docstring to GPT
+    # Set 'answer' to be the resulting docstring
     response = send_prompt(prompt)
     answer   = response['choices'][0]['text']
     answer   = '"""' + answer
 
+    # Document what's happening to the debugger output file
     pr('Got the answer:\n')
     pr(answer)
 
+    # Print the function header/signature
     code_lines = code_str.split('\n')
     print(code_lines[0])
 
+    # Print the docstring
     indent = re.search(r'^(\s*)', code_lines[0])
     indent = len(indent.group(1))
     prefix = ' ' * (indent + 4)
@@ -117,6 +131,7 @@ def print_fn_w_docstring(code_str):
     for ans_line in answer.split('\n'):
         print(prefix + ans_line)
 
+    # Print the rest of the function
     for line in code_lines[1:]:
         print(line)
 
@@ -126,6 +141,7 @@ def print_fn_w_docstring(code_str):
 
 if __name__ == '__main__':
 
+    # Verify OpenAI API key is configured
     keyfile = Path('config.json')
     if not keyfile.is_file():
         print('Error: Please add your openai api key to the file config.json')
@@ -135,14 +151,23 @@ if __name__ == '__main__':
     with keyfile.open() as f:
         openai.api_key = json.load(f)['api_key']
 
+    # If this script has been improperly executed, print the docs
     if len(sys.argv) < 2:
         print(__doc__)
         sys.exit(0)
 
+    # Open and ingest the python file provided as an input
     with open(sys.argv[1]) as f:
         code = f.read()
     lines = code.split('\n')
 
+    print('Here is your code with docstrings added: \n\n')
+
+    # Walk through the input code, line-by-line.
+    # Print out code, until you find a function. 
+    # When you find a function, capture it and have GPT provide a docstring for it.
+    # Print out the function with docstring.
+    # Continue as before until file end.
     capture_mode = False
     indentation  = 0
     current_fn   = None
