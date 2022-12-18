@@ -32,7 +32,8 @@
 
 
 # KNOWN BUGS:
-#  * When there are back to back function definitions, this script will throw out all but the last.
+#  * When there are back to back function definitions, this script will throw
+#    out all but the last.
 
 
 # ______________________________________________________________________
@@ -60,7 +61,7 @@ print('done!')
 # Constants and globals
 
 NUM_REPLY_TOKENS = 700
-MOCK_CALLS = False
+MOCK_CALLS       = False
 
 
 # Turn this on to have additional debug output written to a file.
@@ -94,21 +95,22 @@ def send_prompt_to_gpt(prompt):
     pr(prompt)
 
     if MOCK_CALLS:
-        gpt_response = "\nTHIS IS A MOCK DOCSTRING. Set MOCK_CALLS to False to get real ones.\n\"\"\""
+        gpt_response = ('\nTHIS IS A MOCK DOCSTRING. ' +
+                        'Set MOCK_CALLS to False to get real ones.\n"""')
     else:
         # Send request to GPT, return response
         response = openai.Completion.create(
-            model = "text-davinci-003",
-            prompt = prompt,
-            temperature = 0,
-            max_tokens = NUM_REPLY_TOKENS,
-            top_p = 1.0,
+            model             = "text-davinci-003",
+            prompt            = prompt,
+            temperature       = 0,
+            max_tokens        = NUM_REPLY_TOKENS,
+            top_p             = 1.0,
             frequency_penalty = 0.0,
-            presence_penalty = 0.0
+            presence_penalty  = 0.0
         )
         gpt_response =  response['choices'][0]['text']
 
-    return "\"\"\"" + gpt_response
+    return '"""' + gpt_response
 
 
 def fetch_docstring(code_str):
@@ -130,9 +132,9 @@ def fetch_docstring(code_str):
 
 
 def print_fn_w_docstring(code_str):
-    """
-    This function requests GPT provide a docstring for the stringified function provided as an argument.
-    It then prints the stringified function with the docstring added.
+    """ This function requests GPT provide a docstring for the function code
+        (as a str) provided as an argument.  It then prints the function with
+        the docstring added.
     """
 
     # Fetch the docstring
@@ -180,13 +182,10 @@ if __name__ == '__main__':
         code = f.read()
     lines = code.split('\n')
 
-
     print('Here is your code with docstrings added: \n\n')
-
 
     # Get 'Top of File' docstring
     tof_docstring = fetch_docstring(code)
-
 
     # Get Function docstring
     #       Walk through the input code, line-by-line.
