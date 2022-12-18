@@ -30,6 +30,11 @@
 #  * Wrap long lines at detected file width (or command-line param).
 #  * We could add per-line or per-code-paragraph comments.
 
+
+# KNOWN BUGS:
+#  * When there are back to back function definitions, this script will throw out all but the last.
+
+
 # ______________________________________________________________________
 # Imports
 
@@ -55,6 +60,7 @@ print('done!')
 # Constants and globals
 
 NUM_REPLY_TOKENS = 700
+MOCK_CALLS = False
 
 
 # Turn this on to have additional debug output written to a file.
@@ -76,7 +82,7 @@ def pr(s=''):
 # ______________________________________________________________________
 # GPT functions
 
-def send_prompt(prompt):
+def send_prompt_to_gpt(prompt):
     """
     This function sends the provided prompt to GPT and returns GPT's response.
     """
@@ -87,22 +93,25 @@ def send_prompt(prompt):
     pr(f'I will send over this prompt:\n\n')
     pr(prompt)
 
-    # Send request to GPT, return response
-    return openai.Completion.create(
-        model = "text-davinci-003",
-        prompt = prompt,
-        temperature = 0,
-        max_tokens = NUM_REPLY_TOKENS,
-        top_p = 1.0,
-        frequency_penalty = 0.0,
-        presence_penalty = 0.0
-    )
+    if MOCK_CALLS:
+        gpt_response = "\nTHIS IS A MOCK DOCSTRING. Set MOCK_CALLS to False to get real ones.\n\"\"\""
+    else:
+        # Send request to GPT, return response
+        response = openai.Completion.create(
+            model = "text-davinci-003",
+            prompt = prompt,
+            temperature = 0,
+            max_tokens = NUM_REPLY_TOKENS,
+            top_p = 1.0,
+            frequency_penalty = 0.0,
+            presence_penalty = 0.0
+        )
+        gpt_response =  response['choices'][0]['text']
 
-def print_fn_w_docstring(code_str):
-    """
-    This function requests GPT provide a docstring for the stringified function provided as an argument.
-    It then prints the stringified function with the docstring added.
-    """
+    return "\"\"\"" + gpt_response
+
+
+def fetch_docstring(code_str):
 
     # Construct the GPT prompt
     prompt  = 'Write a docstring for the following code:\n\n'
@@ -110,14 +119,24 @@ def print_fn_w_docstring(code_str):
     prompt += '\n\nDocstring:\n"""'
 
     # Make the request for docstring to GPT
-    # Set 'answer' to be the resulting docstring
-    response = send_prompt(prompt)
-    answer   = response['choices'][0]['text']
-    answer   = '"""' + answer
+    docstring = send_prompt_to_gpt(prompt)
 
     # Document what's happening to the debugger output file
-    pr('Got the answer:\n')
-    pr(answer)
+    pr('Got the docstring:\n')
+    pr(docstring)
+
+    # Return it
+    return docstring
+
+
+def print_fn_w_docstring(code_str):
+    """
+    This function requests GPT provide a docstring for the stringified function provided as an argument.
+    It then prints the stringified function with the docstring added.
+    """
+
+    # Fetch the docstring
+    docstring = fetch_docstring(code_str)
 
     # Print the function header/signature
     code_lines = code_str.split('\n')
@@ -128,7 +147,7 @@ def print_fn_w_docstring(code_str):
     indent = len(indent.group(1))
     prefix = ' ' * (indent + 4)
 
-    for ans_line in answer.split('\n'):
+    for ans_line in docstring.split('\n'):
         print(prefix + ans_line)
 
     # Print the rest of the function
@@ -161,22 +180,33 @@ if __name__ == '__main__':
         code = f.read()
     lines = code.split('\n')
 
+
     print('Here is your code with docstrings added: \n\n')
 
-    # Walk through the input code, line-by-line.
-    # Print out code, until you find a function. 
-    # When you find a function, capture it and have GPT provide a docstring for it.
-    # Print out the function with docstring.
-    # Continue as before until file end.
+
+    # Get 'Top of File' docstring
+    tof_docstring = fetch_docstring(code)
+
+
+    # Get Function docstring
+    #       Walk through the input code, line-by-line.
+    #       Print out code, until you find a function. 
+    #       When you find a function, capture it and have GPT provide a docstring for it.
+    #       Print out the function with docstring.
+    #       Continue as before until file end.
+
+    passed_the_shebang_line = False
     capture_mode = False
     indentation  = 0
     current_fn   = None
+
     for line in lines:
         if m := re.search(r'^(\s*)def ', line):
             capture_mode = True
             indentation  = len(m.group(1))
             current_fn   = [line]  # This will be a list of lines.
         else:
+
             this_indent = re.search(r'^(\s*)', line)
             this_indent = len(this_indent.group(1))
             if len(line.strip()) > 0 and this_indent <= indentation:
@@ -187,4 +217,9 @@ if __name__ == '__main__':
             if capture_mode:
                 current_fn.append(line)
             else:
-                print(line)
+                if not passed_the_shebang_line and re.search(r'^#!', line):
+                    passed_the_shebang_line = True
+                    print(line)
+                    print(tof_docstring)
+                else:
+                    print(line)
