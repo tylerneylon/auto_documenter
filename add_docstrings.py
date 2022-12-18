@@ -33,8 +33,10 @@
 # KNOWN BUGS:
 #  * When there are back to back function definitions, this script will throw
 #    out all but the last.
-#  * When the last code block in a file is a function definition, that codeblock will get thrown away.
-#  * If the input script does not have a shebang line, the top of file docstring possibly won't get inserted.
+#  * When the last code block in a file is a function definition, that codeblock
+#    will get thrown away.
+#  * If the input script does not have a shebang line, the top of file docstring
+#    possibly won't get inserted.
 
 
 # ______________________________________________________________________
@@ -63,8 +65,10 @@ print('done!')
 
 NUM_REPLY_TOKENS = 700
 MOCK_CALLS       = True
-PRINT_TO_FILE    = True # Setting to False will print to console, instead of output/#{input_filename}
-output_file = None
+
+# Setting to False will print to console, instead of output/#{input_filename}.
+PRINT_TO_FILE = True
+output_file   = None
 
 # Turn this on to have additional debug output written to a file.
 if True:
@@ -204,8 +208,9 @@ if __name__ == '__main__':
         code = f.read()
     lines = code.split('\n')
 
-    # If our output is going to a file, create and open a file in the output directory by the same name, for writing
-    # Otherwise make introductory print to console
+    # If our output is going to a file, create and open a file in the output
+    # directory by the same name, for writing. Otherwise make introductory print
+    # to console
     if PRINT_TO_FILE:
         # Ensure the output directory exists.
         Path('output').mkdir(exist_ok=True)
@@ -218,15 +223,16 @@ if __name__ == '__main__':
     # BEGIN GENERATING CODE WITH DOCSTRINGS
     #######################################
 
-    # Get 'Top of File' docstring
+    # Get the 'Top of File' docstring.
     tof_docstring = fetch_docstring(code)
 
     # Print Out Input Code with Docstrings Inserted
     #       Walk through the input code, line-by-line.
     #       Print each line of code through the shebang line.
-    #       If you've passed the shebang line, add the top of file docstring
+    #       If you've passed the shebang line, add the top of file docstring.
     #       Then print out code, until you find a function. 
-    #       When you find a function, capture it and have GPT provide a docstring for it.
+    #       When you find a function, capture it and have GPT provide a
+    #       docstring for it.
     #       Print out the function with docstring.
     #       Continue as before until file end.
 
@@ -261,7 +267,6 @@ if __name__ == '__main__':
 
 
     if PRINT_TO_FILE:
-        print(f'The file \'{output_file_path}\' now contains your code with docstrings added.')
+        print(f'The file "{output_file_path}" now contains your code with ' +
+              'docstrings added.')
         output_file.close()
-
-
