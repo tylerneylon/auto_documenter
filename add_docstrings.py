@@ -25,9 +25,12 @@
 #
 #  * Work nicely with existing docstrings (use as input and overwrite).
 #  * Add docstrings for class definitions.
-#  * Detect indentation type per file.
+#  * Detect indentation size type per file.
 #  * Wrap long lines at detected file width (or command-line param).
 #  * We could add per-line or per-code-paragraph comments.
+#  * Aim for consistent style in terms of where newlines are and quotes are for
+#    each docstring. Eg, is the first line of docstring content on the same line
+#    as the opening quotes? Is the content indented? Etc.
 
 
 # KNOWN BUGS:
