@@ -31,8 +31,6 @@
 
 
 # KNOWN BUGS:
-#  * When the last code block in a file is a function definition, that codeblock
-#    will get thrown away.
 #  * If the input script does not have a shebang line, the top of file docstring
 #    possibly won't get inserted.
 
@@ -268,6 +266,7 @@ if __name__ == '__main__':
                     print_out(tof_docstring)
                 else:
                     print_out(line)
+    end_current_fn()  # Don't drop a fn defined up to the last line.
 
 
     if PRINT_TO_FILE:
