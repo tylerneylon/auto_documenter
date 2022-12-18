@@ -23,6 +23,9 @@
 
 # TODO Ideas:
 #
+#  * Show a progress bar when there's no stdout output.
+#    (This would be nice because GPT is not super-fast and people are
+#     impatient.)
 #  * Work nicely with existing docstrings (use as input and overwrite).
 #  * Add docstrings for class definitions.
 #  * Detect indentation size type per file.
@@ -32,9 +35,9 @@
 #    each docstring. Eg, is the first line of docstring content on the same line
 #    as the opening quotes? Is the content indented? Etc.
 
-
 # KNOWN BUGS:
-#  (none right now, but add them here as we find more)
+#  * Actually measure the number of tokens before we send requests in order to
+#    avoid sending requests that involve too many tokens for GPT.
 
 
 # ______________________________________________________________________
@@ -61,8 +64,14 @@ print('done!')
 # ______________________________________________________________________
 # Constants and globals
 
+# This is the maximum byte length of code that we'll send to GPT in one request.
+# Really, we ought to be measuring the number of _tokens_. This is a rough
+# approximation that can fail, but will often work in practice.
+# TODO: Use this everywhere, not just for top-of-file docstrings.
+MAX_CODE_STR = 9000
+
 NUM_REPLY_TOKENS = 700
-MOCK_CALLS       = True
+MOCK_CALLS       = False
 
 # Setting to False will print to console, instead of output/#{input_filename}.
 PRINT_TO_FILE = True
@@ -121,7 +130,7 @@ def fetch_docstring(code_str):
 
     # Construct the GPT prompt
     prompt  = 'Write a docstring for the following code:\n\n'
-    prompt += code_str
+    prompt += code_str[:MAX_CODE_STR]
     prompt += '\n\nDocstring:\n"""'
 
     # Make the request for docstring to GPT
