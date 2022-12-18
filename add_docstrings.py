@@ -207,7 +207,9 @@ if __name__ == '__main__':
     # If our output is going to a file, create and open a file in the output directory by the same name, for writing
     # Otherwise make introductory print to console
     if PRINT_TO_FILE:
-        output_file = open(output_file_path,'w')
+        # Ensure the output directory exists.
+        Path('output').mkdir(exist_ok=True)
+        output_file = open(output_file_path, 'w')
     else:
         print('Here is your code with docstrings added: \n\n')
 
