@@ -31,8 +31,6 @@
 
 
 # KNOWN BUGS:
-#  * When there are back to back function definitions, this script will throw
-#    out all but the last.
 #  * When the last code block in a file is a function definition, that codeblock
 #    will get thrown away.
 #  * If the input script does not have a shebang line, the top of file docstring
@@ -241,20 +239,26 @@ if __name__ == '__main__':
     indentation  = 0
     current_fn   = None
 
+    # We'll call this function each time we detect the end of function
+    # definition or the start of a new definition.
+    def end_current_fn():
+        if not capture_mode:
+            return
+        print_fn_w_docstring('\n'.join(current_fn))
+
     for line in lines:
         if m := re.search(r'^(\s*)def ', line):
+            end_current_fn()
             capture_mode = True
             indentation  = len(m.group(1))
             current_fn   = [line]  # This will be a list of lines.
         else:
-
             this_indent = re.search(r'^(\s*)', line)
             this_indent = len(this_indent.group(1))
             if len(line.strip()) > 0 and this_indent <= indentation:
-                if capture_mode:
-                    # We just finished capturing a function definition.
-                    capture_mode = False
-                    print_fn_w_docstring('\n'.join(current_fn))
+                # We just finished capturing a function definition.
+                end_current_fn()
+                capture_mode = False
             if capture_mode:
                 current_fn.append(line)
             else:
