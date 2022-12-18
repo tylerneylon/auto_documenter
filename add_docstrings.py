@@ -31,8 +31,7 @@
 
 
 # KNOWN BUGS:
-#  * If the input script does not have a shebang line, the top of file docstring
-#    possibly won't get inserted.
+#  (none right now, but add them here as we find more)
 
 
 # ______________________________________________________________________
@@ -224,15 +223,20 @@ if __name__ == '__main__':
 
     # Print Out Input Code with Docstrings Inserted
     #       Walk through the input code, line-by-line.
-    #       Print each line of code through the shebang line.
-    #       If you've passed the shebang line, add the top of file docstring.
+    #       Add the top-of-file docstring.
     #       Then print out code, until you find a function. 
     #       When you find a function, capture it and have GPT provide a
     #       docstring for it.
     #       Print out the function with docstring.
     #       Continue as before until file end.
 
-    passed_the_shebang_line = False
+    # Print out any shebang line as a special case.
+    if lines[0].startswith('#!'):
+        print_out(lines[0])
+        lines = lines[1:]
+
+    print_out(tof_docstring)
+
     capture_mode = False
     indentation  = 0
     current_fn   = None
@@ -260,12 +264,7 @@ if __name__ == '__main__':
             if capture_mode:
                 current_fn.append(line)
             else:
-                if not passed_the_shebang_line and re.search(r'^#!', line):
-                    passed_the_shebang_line = True
-                    print_out(line)
-                    print_out(tof_docstring)
-                else:
-                    print_out(line)
+                print_out(line)
     end_current_fn()  # Don't drop a fn defined up to the last line.
 
 
