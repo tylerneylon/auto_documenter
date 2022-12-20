@@ -31,6 +31,7 @@
 #  * Aim for consistent style in terms of where newlines are and quotes are for
 #    each docstring. Eg, is the first line of docstring content on the same line
 #    as the opening quotes? Is the content indented? Etc.
+#  * Consider using a flag to replace/augment print_to_console setting in config file.
 
 # KNOWN BUGS:
 #  * Actually measure the number of tokens before we send requests in order to
