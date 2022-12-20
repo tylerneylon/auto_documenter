@@ -23,9 +23,6 @@
 
 # TODO Ideas:
 #
-#  * Show a progress bar when there's no stdout output.
-#    (This would be nice because GPT is not super-fast and people are
-#     impatient.)
 #  * Work nicely with existing docstrings (use as input and overwrite).
 #  * Add docstrings for class definitions.
 #  * Detect indentation size type per file.
@@ -223,7 +220,7 @@ if __name__ == '__main__':
         Path('output').mkdir(exist_ok=True)
         output_file = open(output_file_path, 'w')
     else:
-        print('Here is your code with docstrings added: \n\n')
+        print('Here is your code with docstrings added:', end='\n\n\n')
 
 
     #######################################
@@ -231,8 +228,10 @@ if __name__ == '__main__':
     #######################################
 
     # Get the 'Top of File' docstring.
+    if PRINT_TO_FILE: print('Writing top-of-file docstring .. ', end='', flush=True)
     tof_docstring = fetch_docstring(code)
-
+    if PRINT_TO_FILE: print('done!')
+        
     # Print Out Input Code with Docstrings Inserted
     #       Walk through the input code, line-by-line.
     #       Add the top-of-file docstring.
@@ -249,6 +248,7 @@ if __name__ == '__main__':
 
     print_out(tof_docstring)
 
+    
     capture_mode = False
     indentation  = 0
     current_fn   = None
@@ -260,7 +260,9 @@ if __name__ == '__main__':
             return
         print_fn_w_docstring('\n'.join(current_fn))
 
-    for line in lines:
+    for line_idx, line in enumerate(lines):
+        if PRINT_TO_FILE: print(f'Writing docstrings for each function .. {line_idx+1} / {len(lines)}', end='\r', flush=True)
+
         if m := re.search(r'^(\s*)def ', line):
             end_current_fn()
             capture_mode = True
@@ -279,8 +281,10 @@ if __name__ == '__main__':
                 print_out(line)
     end_current_fn()  # Don't drop a fn defined up to the last line.
 
+    if PRINT_TO_FILE: print('Writing docstrings for each function .. done!               ')
+
+
 
     if PRINT_TO_FILE:
-        print(f'The file "{output_file_path}" now contains your code with ' +
-              'docstrings added.')
+        print(f'\nAll Done! Your updated code is at {output_file_path}')
         output_file.close()
