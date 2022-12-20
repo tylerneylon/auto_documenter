@@ -37,10 +37,7 @@
 #    avoid sending requests that involve too many tokens for GPT.
 
 # ______________________________________________________________________
-# Imports
-
-# The openai library is slow to load, so be clear something is happening.
-print('Loading libraries .. ', end='', flush=True)
+# Imports (OpenAI is imported only after all-systems-are-a-go farther below)
 
 # Standard library imports.
 import json
@@ -51,12 +48,6 @@ import sys
 import time
 from pathlib import Path
 import shutil
-
-# Third party imports.
-import openai
-
-print('done!')
-
 
 # ______________________________________________________________________
 # Constants and globals
@@ -179,6 +170,10 @@ def print_fn_w_docstring(code_str):
     for line in code_lines[1:]:
         print_out(line)
 
+# only prints messages to standard out if we aren't printing the modified code output to the console
+def print_status_msg(msg, end='\n', flush=False):
+    if not PRINT_TO_CONSOLE:
+        print(msg, end=end, flush=flush)
 
 # ______________________________________________________________________
 # Main
@@ -200,7 +195,7 @@ if __name__ == '__main__':
             sys.exit(0)
 
         # Set the keys
-        openai.api_key = keys['api_key']
+        OPENAI_API_KEY = keys['api_key']
         PRINT_TO_CONSOLE = keys['print_to_console'] if ("print_to_console" in keys) else False
         MOCK_CALLS = keys['mock_calls'] if ("mock_calls" in keys) else False
 
@@ -221,14 +216,18 @@ if __name__ == '__main__':
 
     # If appropriate, inform the user that mock_calls is turned on
     if MOCK_CALLS:
-        print('Note: Calls to GPT will be mocked. (To change this, open config.json and change "mock_calls" to false)')
+        print_status_msg('Note: Calls to GPT will be mocked. (To change this, open config.json and change "mock_calls" to false)')
+    else:
+        # The openai library is slow to load, so be clear something is happening.
+        print_status_msg('Loading OpenAI library .. ', end='', flush=True)
+        # Third party imports.
+        import openai
+        print_status_msg('done!')
+        openai.api_key = OPENAI_API_KEY
 
     # If our output is going to a file, create and open a file in the output
-    # directory by the same name, for writing. Otherwise make introductory print
-    # to console.
-    if PRINT_TO_CONSOLE:
-        print('Here is your code with docstrings added:', end='\n\n\n')
-    else:
+    # directory by the same name, for writing. 
+    if not PRINT_TO_CONSOLE:
         # Ensure the output directory exists.
         Path('output').mkdir(exist_ok=True)
         output_file = open(output_file_path, 'w')
@@ -238,9 +237,9 @@ if __name__ == '__main__':
     #######################################
 
     # Get the 'Top of File' docstring.
-    if not PRINT_TO_CONSOLE: print('Writing top-of-file docstring .. ', end='', flush=True)
+    print_status_msg('Writing top-of-file docstring .. ', end='', flush=True)
     tof_docstring = fetch_docstring(code)
-    if not PRINT_TO_CONSOLE: print('done!')
+    print_status_msg('done!')
         
     # Print Out Input Code with Docstrings Inserted
     #       Walk through the input code, line-by-line.
@@ -272,7 +271,7 @@ if __name__ == '__main__':
         print_fn_w_docstring('\n'.join(current_fn))
 
     for line_idx, line in enumerate(lines):
-        if not PRINT_TO_CONSOLE: print(f'Writing docstrings for each function .. {line_idx+1} / {len(lines)}', end='\r', flush=True)
+        print_status_msg(f'Writing docstrings for each function .. {line_idx+1} / {len(lines)}', end='\r', flush=True)
 
         if m := re.search(r'^(\s*)def ', line):
             end_current_fn()
@@ -292,7 +291,7 @@ if __name__ == '__main__':
                 print_out(line)
     end_current_fn()  # Don't drop a fn defined up to the last line.
 
-    if not PRINT_TO_CONSOLE: 
-        print('Writing docstrings for each function .. done!               ')
-        print(f'\nAll Done! Your updated code is at {output_file_path}')
-        output_file.close()
+    print_status_msg('Writing docstrings for each function .. done!               ')
+    print_status_msg(f'\nAll Done! Your updated code is at {output_file_path}')
+
+    if output_file: output_file.close() 
