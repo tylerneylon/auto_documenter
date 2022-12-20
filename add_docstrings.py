@@ -36,7 +36,6 @@
 #  * Actually measure the number of tokens before we send requests in order to
 #    avoid sending requests that involve too many tokens for GPT.
 
-
 # ______________________________________________________________________
 # Imports
 
@@ -51,6 +50,7 @@ import re
 import sys
 import time
 from pathlib import Path
+import shutil
 
 # Third party imports.
 import openai
@@ -68,10 +68,8 @@ print('done!')
 MAX_CODE_STR = 9000
 
 NUM_REPLY_TOKENS = 700
-MOCK_CALLS       = False
 
 # Setting to False will print to console, instead of output/#{input_filename}.
-PRINT_TO_FILE = True
 output_file   = None
 
 # Turn this on to have additional debug output written to a file.
@@ -106,7 +104,7 @@ def send_prompt_to_gpt(prompt):
 
     if MOCK_CALLS:
         gpt_response = ('\nTHIS IS A MOCK DOCSTRING. ' +
-                        'Set MOCK_CALLS to False to get real ones.\n"""')
+                        'To change this, set "mock_calls" to false in config.json.\n"""')
     else:
         # Send request to GPT, return response
         response = openai.Completion.create(
@@ -149,7 +147,7 @@ def print_out(line):
             - to a file in the output directory
             - to console
     """
-    if PRINT_TO_FILE:
+    if not PRINT_TO_CONSOLE:
         output_file.write(line)
         output_file.write('\n')
     else:
@@ -188,15 +186,24 @@ def print_fn_w_docstring(code_str):
 
 if __name__ == '__main__':
 
-    # Verify that the OpenAI API key is configured.
+    # If the config file does not exist, create it.
     keyfile = Path('config.json')
     if not keyfile.is_file():
-        print('Error: Please add your openai api key to the file config.json')
-        print('The format is {"api_key": "your_key"}')
-        sys.exit(0)
-    
+        shutil.copyfile("templates/config.template", "config.json")
+
     with keyfile.open() as f:
-        openai.api_key = json.load(f)['api_key']
+        keys = json.load(f)
+
+        # Verify config.json contains required key definitions
+        if not ("api_key" in keys and keys['api_key']): 
+            print('Error: You are missing a openai API key in config.json. Please set {"api_key": "YOUR_API_KEY"} where YOUR_API_KEY is the key you generate at https://beta.openai.com/account/api-keys.')
+            sys.exit(0)
+
+        # Set the keys
+        openai.api_key = keys['api_key']
+        PRINT_TO_CONSOLE = keys['print_to_console'] if ("print_to_console" in keys) else False
+        MOCK_CALLS = keys['mock_calls'] if ("mock_calls" in keys) else False
+
 
     # If this script has been improperly executed, print the docstring & exit.
     if len(sys.argv) < 2:
@@ -208,29 +215,32 @@ if __name__ == '__main__':
     input_filename = input_filename_path.split("/")[-1]
     output_file_path = f'output/{input_filename}'
 
+
     with open(input_filename_path) as f:
         code = f.read()
     lines = code.split('\n')
 
+    if MOCK_CALLS:
+        print('Note: Calls to GPT will be mocked. (To change this, open config.json and change "mock_calls" to false)')
+
     # If our output is going to a file, create and open a file in the output
     # directory by the same name, for writing. Otherwise make introductory print
     # to console.
-    if PRINT_TO_FILE:
+    if PRINT_TO_CONSOLE:
+        print('Here is your code with docstrings added:', end='\n\n\n')
+    else:
         # Ensure the output directory exists.
         Path('output').mkdir(exist_ok=True)
         output_file = open(output_file_path, 'w')
-    else:
-        print('Here is your code with docstrings added:', end='\n\n\n')
-
 
     #######################################
     # BEGIN GENERATING CODE WITH DOCSTRINGS
     #######################################
 
     # Get the 'Top of File' docstring.
-    if PRINT_TO_FILE: print('Writing top-of-file docstring .. ', end='', flush=True)
+    if not PRINT_TO_CONSOLE: print('Writing top-of-file docstring .. ', end='', flush=True)
     tof_docstring = fetch_docstring(code)
-    if PRINT_TO_FILE: print('done!')
+    if not PRINT_TO_CONSOLE: print('done!')
         
     # Print Out Input Code with Docstrings Inserted
     #       Walk through the input code, line-by-line.
@@ -261,7 +271,7 @@ if __name__ == '__main__':
         print_fn_w_docstring('\n'.join(current_fn))
 
     for line_idx, line in enumerate(lines):
-        if PRINT_TO_FILE: print(f'Writing docstrings for each function .. {line_idx+1} / {len(lines)}', end='\r', flush=True)
+        if not PRINT_TO_CONSOLE: print(f'Writing docstrings for each function .. {line_idx+1} / {len(lines)}', end='\r', flush=True)
 
         if m := re.search(r'^(\s*)def ', line):
             end_current_fn()
@@ -281,10 +291,10 @@ if __name__ == '__main__':
                 print_out(line)
     end_current_fn()  # Don't drop a fn defined up to the last line.
 
-    if PRINT_TO_FILE: print('Writing docstrings for each function .. done!               ')
+    if not PRINT_TO_CONSOLE: print('Writing docstrings for each function .. done!               ')
 
 
 
-    if PRINT_TO_FILE:
+    if not PRINT_TO_CONSOLE:
         print(f'\nAll Done! Your updated code is at {output_file_path}')
         output_file.close()
