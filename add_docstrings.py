@@ -69,8 +69,7 @@ MAX_CODE_STR = 9000
 
 NUM_REPLY_TOKENS = 700
 
-# Setting to False will print to console, instead of output/#{input_filename}.
-output_file   = None
+output_file = None
 
 # Turn this on to have additional debug output written to a file.
 if True:
@@ -186,15 +185,16 @@ def print_fn_w_docstring(code_str):
 
 if __name__ == '__main__':
 
-    # If the config file does not exist, create it.
+    # If the config file does not exist, create it from the template.
     keyfile = Path('config.json')
     if not keyfile.is_file():
         shutil.copyfile("templates/config.template", "config.json")
 
+    # Open the config file
     with keyfile.open() as f:
         keys = json.load(f)
 
-        # Verify config.json contains required key definitions
+        # Verify config.json contains a non-null definition for the API key
         if not ("api_key" in keys and keys['api_key']): 
             print('Error: You are missing a openai API key in config.json. Please set {"api_key": "YOUR_API_KEY"} where YOUR_API_KEY is the key you generate at https://beta.openai.com/account/api-keys.')
             sys.exit(0)
@@ -215,11 +215,11 @@ if __name__ == '__main__':
     input_filename = input_filename_path.split("/")[-1]
     output_file_path = f'output/{input_filename}'
 
-
     with open(input_filename_path) as f:
         code = f.read()
     lines = code.split('\n')
 
+    # If appropriate, inform the user that mock_calls is turned on
     if MOCK_CALLS:
         print('Note: Calls to GPT will be mocked. (To change this, open config.json and change "mock_calls" to false)')
 
@@ -256,9 +256,10 @@ if __name__ == '__main__':
         print_out(lines[0])
         lines = lines[1:]
 
+    # Print out the Top-of-File Docstring
     print_out(tof_docstring)
 
-    
+    # Set up vars for capturing functions    
     capture_mode = False
     indentation  = 0
     current_fn   = None
@@ -291,10 +292,7 @@ if __name__ == '__main__':
                 print_out(line)
     end_current_fn()  # Don't drop a fn defined up to the last line.
 
-    if not PRINT_TO_CONSOLE: print('Writing docstrings for each function .. done!               ')
-
-
-
-    if not PRINT_TO_CONSOLE:
+    if not PRINT_TO_CONSOLE: 
+        print('Writing docstrings for each function .. done!               ')
         print(f'\nAll Done! Your updated code is at {output_file_path}')
         output_file.close()
