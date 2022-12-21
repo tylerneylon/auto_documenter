@@ -31,11 +31,13 @@
 #  * Aim for consistent style in terms of where newlines are and quotes are for
 #    each docstring. Eg, is the first line of docstring content on the same line
 #    as the opening quotes? Is the content indented? Etc.
-#  * Consider using a flag to replace/augment print_to_console setting in config file.
+#  * Consider using a flag to replace/augment print_to_console setting in config
+#    file.
 
 # KNOWN BUGS:
 #  * Actually measure the number of tokens before we send requests in order to
 #    avoid sending requests that involve too many tokens for GPT.
+
 
 # ______________________________________________________________________
 # Imports (OpenAI is imported only after all-systems-are-a-go farther below)
@@ -45,10 +47,11 @@ import json
 import os
 import random
 import re
+import shutil
 import sys
 import time
 from pathlib import Path
-import shutil
+
 
 # ______________________________________________________________________
 # Constants and globals
@@ -94,12 +97,12 @@ def send_prompt_to_gpt(prompt):
     pr(prompt)
 
     if MOCK_CALLS:
-        gpt_response = ('\nTHIS IS A MOCK DOCSTRING. ' +
-                        'To change this, set "mock_calls" to false in config.json.\n"""')
+        gpt_response = ('\nTHIS IS A MOCK DOCSTRING. To change this, ' +
+                        'set "mock_calls" to false in config.json.\n"""')
     else:
         # Send request to GPT, return response
         response = openai.Completion.create(
-            model             = "text-davinci-003",
+            model             = 'text-davinci-003',
             prompt            = prompt,
             temperature       = 0,
             max_tokens        = NUM_REPLY_TOKENS,
@@ -152,14 +155,14 @@ def print_fn_w_docstring(code_str):
         the docstring added.
     """
 
-    # Fetch the docstring
+    # Fetch the docstring.
     docstring = fetch_docstring(code_str)
 
-    # Print the function header/signature
+    # Print the function header/signature.
     code_lines = code_str.split('\n')
     print_out(code_lines[0])
 
-    # Print the docstring
+    # Print the docstring.
     indent = re.search(r'^(\s*)', code_lines[0])
     indent = len(indent.group(1))
     prefix = ' ' * (indent + 4)
@@ -167,11 +170,12 @@ def print_fn_w_docstring(code_str):
     for ans_line in docstring.split('\n'):
         print_out(prefix + ans_line)
 
-    # Print the rest of the function
+    # Print the rest of the function.
     for line in code_lines[1:]:
         print_out(line)
 
-# only prints messages to standard out if we aren't printing the modified code output to the console
+# This only prints messages to standard out if we aren't printing the modified
+# code output to the console.
 def print_status_msg(msg, end='\n', flush=False):
     if not PRINT_TO_CONSOLE:
         print(msg, end=end, flush=flush)
@@ -184,21 +188,21 @@ if __name__ == '__main__':
     # If the config file does not exist, create it from the template.
     keyfile = Path('config.json')
     if not keyfile.is_file():
-        shutil.copyfile("templates/config.template", "config.json")
+        shutil.copyfile('templates/config.template', 'config.json')
 
     # Open the config file
     with keyfile.open() as f:
         keys = json.load(f)
 
         # Verify config.json contains a non-null definition for the API key
-        if not ("api_key" in keys and keys['api_key']): 
+        if not ('api_key' in keys and keys['api_key']): 
             print('Error: You are missing a openai API key in config.json. Please set {"api_key": "YOUR_API_KEY"} where YOUR_API_KEY is the key you generate at https://beta.openai.com/account/api-keys.')
             sys.exit(0)
 
         # Set the keys
         OPENAI_API_KEY = keys['api_key']
-        PRINT_TO_CONSOLE = keys['print_to_console'] if ("print_to_console" in keys) else False
-        MOCK_CALLS = keys['mock_calls'] if ("mock_calls" in keys) else False
+        PRINT_TO_CONSOLE = keys['print_to_console'] if ('print_to_console' in keys) else False
+        MOCK_CALLS = keys['mock_calls'] if ('mock_calls' in keys) else False
 
 
     # If this script has been improperly executed, print the docstring & exit.
@@ -208,7 +212,7 @@ if __name__ == '__main__':
 
     # Open and ingest the Python file provided as an input.
     input_filename_path = sys.argv[1]
-    input_filename = input_filename_path.split("/")[-1]
+    input_filename = input_filename_path.split('/')[-1]
     output_file_path = f'output/{input_filename}'
 
     with open(input_filename_path) as f:
@@ -271,8 +275,14 @@ if __name__ == '__main__':
             return
         print_fn_w_docstring('\n'.join(current_fn))
 
+    status_prefix = 'Writing docstrings for each function .. '
     for line_idx, line in enumerate(lines):
-        print_status_msg(f'Writing docstrings for each function .. {line_idx+1} / {len(lines)}', end='\r', flush=True)
+
+        print_status_msg(
+                status_prefix + f'{line_idx+1} / {len(lines)}',
+                end='\r',
+                flush=True
+        )
 
         if m := re.search(r'^(\s*)def ', line):
             end_current_fn()
@@ -292,7 +302,8 @@ if __name__ == '__main__':
                 print_out(line)
     end_current_fn()  # Don't drop a fn defined up to the last line.
 
-    print_status_msg('Writing docstrings for each function .. done!               ')
+    print_status_msg(status_prefix + 'done!' + ' ' * 10)
     print_status_msg(f'\nAll Done! Your updated code is at {output_file_path}')
 
-    if output_file: output_file.close() 
+    if output_file:
+        output_file.close()
