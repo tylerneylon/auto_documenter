@@ -13,6 +13,16 @@ Usage:
 This prints output to a new file (or stdout) and does not edit the original file. This way you
 can run a diff and see if you like the changes.
 
-Configuration:
-    Choose whether you want to print to console or file: "print_to_file" to true if, instead of printing the modified code to the console, you'd like it printed to a new file in the output directory
-    Make mock calls to GPT? Set "mock_calls" to true if, instead of making calls to GPT, you'd like to make only simulated calls. (This is useful for testing this codebase without hitting API limits)
+## Configuration
+
+    Choose whether you want to print to console or file: "print_to_file" to true
+    if, instead of printing the modified code to the console, you'd like it
+    printed to a new file in the output directory
+    Make mock calls to GPT? Set "mock_calls" to true if, instead of making calls
+    to GPT, you'd like to make only simulated calls. (This is useful for testing
+    this codebase without hitting API limits)
+
+## Contributors
+
+* [Tyler Neylon](https://tylerneylon.com/)
+* [Sean Ahrens](https://seanahrens.notion.site/seanahrens/Hi-I-m-Sean-Ahrens-5a4c5a894e38443a89a73e57ee0e3f69)
