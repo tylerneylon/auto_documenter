@@ -50,6 +50,7 @@ import re
 import shutil
 import sys
 import time
+from inspect import cleandoc
 from pathlib import Path
 
 
@@ -192,17 +193,21 @@ if __name__ == '__main__':
 
     # Open the config file
     with keyfile.open() as f:
-        keys = json.load(f)
+        config = json.load(f)
 
-        # Verify config.json contains a non-null definition for the API key
-        if not ('api_key' in keys and keys['api_key']): 
-            print('Error: You are missing a openai API key in config.json. Please set {"api_key": "YOUR_API_KEY"} where YOUR_API_KEY is the key you generate at https://beta.openai.com/account/api-keys.')
-            sys.exit(0)
+    # Verify config.json contains a non-null definition for the API key.
+    if not ('api_key' in config and config['api_key']):
+        print(cleandoc('''
+            Error: You're missing a openai API key in config.json.
+            Please set {"api_key": "YOUR_API_KEY"} where YOUR_API_KEY is the
+            key you generate at https://beta.openai.com/account/api-keys.
+        '''))
+        sys.exit(0)
 
-        # Set the keys
-        OPENAI_API_KEY = keys['api_key']
-        PRINT_TO_CONSOLE = keys['print_to_console'] if ('print_to_console' in keys) else False
-        MOCK_CALLS = keys['mock_calls'] if ('mock_calls' in keys) else False
+    # Use the config data.
+    OPENAI_API_KEY = config['api_key']
+    PRINT_TO_CONSOLE = config['print_to_console'] if ('print_to_console' in config) else False
+    MOCK_CALLS = config['mock_calls'] if ('mock_calls' in config) else False
 
 
     # If this script has been improperly executed, print the docstring & exit.
@@ -221,7 +226,10 @@ if __name__ == '__main__':
 
     # If appropriate, inform the user that mock_calls is turned on
     if MOCK_CALLS:
-        print_status_msg('Note: Calls to GPT will be mocked. (To change this, open config.json and change "mock_calls" to false)')
+        print_status_msg(cleandoc('''
+            Note: Calls to GPT will be mocked. (To change this, open config.json
+            and change "mock_calls" to false.)
+        ''') + '\n')
     else:
         # The openai library is slow to load, so be clear something is happening.
         print_status_msg('Loading OpenAI library .. ', end='', flush=True)
