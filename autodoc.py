@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-    add_docstrings.py
+    autodoc.py
 
     Usage:
-        add_docstrings.py <my_code.py>
+        autodoc.py <my_code.py>
 
     NOTE: This requires Python 3.9+ (this is openai's library requirement).
 

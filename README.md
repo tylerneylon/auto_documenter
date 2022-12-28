@@ -1,4 +1,4 @@
-# add_docstrings
+# auto_documenter
 
 This is a little script that uses gpt to add docstrings to Python code.
 
@@ -8,7 +8,7 @@ function, you'll end up with two.
 
 Usage:
 
-    ./add_docstrings.py <my_code.py>
+    ./autodoc.py <my_code.py>
 
 This prints output to a new file (or stdout) and does not edit the original file. This way you
 can run a diff and see if you like the changes.
